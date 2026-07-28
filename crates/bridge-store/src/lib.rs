@@ -23,7 +23,7 @@ pub enum StoreError {
     #[error("postgres: {0}")]
     Pg(#[from] sqlx::Error),
     #[error("redis: {0}")]
-    Redis(#[from] redis::RedisError),
+    Redis(String),
     #[error("pool: {0}")]
     Pool(#[from] deadpool_redis::PoolError),
     #[error("pool build: {0}")]
@@ -32,6 +32,12 @@ pub enum StoreError {
     NotFound { entity: String, id: String },
     #[error("serde: {0}")]
     Serde(#[from] serde_json::Error),
+}
+
+impl From<deadpool_redis::redis::RedisError> for StoreError {
+    fn from(e: deadpool_redis::redis::RedisError) -> Self {
+        Self::Redis(e.to_string())
+    }
 }
 
 pub type Result<T> = std::result::Result<T, StoreError>;

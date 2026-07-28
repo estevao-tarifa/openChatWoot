@@ -4,7 +4,7 @@
 //! Regra (spec 5.7): falha do primário → tenta fallback UMA vez → se falhar
 //! também, o pipeline roteia para a degradação (9.3). Nunca silêncio.
 
-use bridge_agent::{run_with_fallback, AgentProvider};
+use bridge_agent::run_with_fallback as bridge_run_with_fallback;
 use bridge_core::{AgentError, AgentRequest, AgentResponse};
 
 use crate::state::{spent_today, AppState};
@@ -32,7 +32,7 @@ pub async fn run_with_fallback(
     match &state.fallback {
         Some(fb) => {
             let fb = fb.as_ref().as_ref();
-            run_with_fallback(primary, fb, req).await
+            bridge_run_with_fallback(primary, fb, req).await
         }
         None => primary.run(req).await,
     }

@@ -4,7 +4,7 @@
 //! estáticos (nunca gerados por IA), sorteados de uma lista para não soar
 //! robótico. Conta no limitador L3 (spec 9.1).
 
-use bridge_core::{Config, AI_LIMITED_LABEL};
+use bridge_core::AI_LIMITED_LABEL;
 use chrono::Utc;
 use redis::AsyncCommands;
 use tracing::debug;

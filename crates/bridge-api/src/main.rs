@@ -119,7 +119,7 @@ async fn webhook_agent_bot(
     // (b)+(c) Verificar HMAC e timestamp. Corpo bruto — NÃO desserializar antes.
     verify_request(&state.config.chatwoot.webhook_secrets, sig, ts, &body)
         .map_err(|e| {
-            metrics::increment_counter!("bridge_webhook_signature_failures_total");
+            metrics::counter!("bridge_webhook_signature_failures_total").increment(1);
             (StatusCode::UNAUTHORIZED, e)
         })?;
 
@@ -143,19 +143,19 @@ async fn process_agent_bot_payload(
     payload: &AgentBotWebhookPayload,
 ) -> Result<Json<Value>, (StatusCode, String)> {
     let event = payload.event.as_str();
-    metrics::increment_counter!(
+    metrics::counter!(
         "bridge_webhook_received_total",
         "event" => event.to_string(),
         "result" => "received"
-    );
+    ).increment(1);
 
     // (f) Apenas `message_created` é de interesse no webhook do bot (Seção 4.3).
     if event != "message_created" {
-        metrics::increment_counter!(
+        metrics::counter!(
             "bridge_webhook_received_total",
             "event" => event.to_string(),
             "result" => "ignored"
-        );
+        ).increment(1);
         return Ok(Json(json!({"ok": true, "ignored": event})));
     }
 
@@ -180,11 +180,11 @@ async fn process_agent_bot_payload(
     // Discriminação do remetente (Seção 4.5 — a mais importante).
     // Nota interna, eco da IA, evento de sistema → descartar sempre.
     if payload.is_private_note() {
-        metrics::increment_counter!(
+        metrics::counter!(
             "bridge_webhook_received_total",
             "event" => event.to_string(),
             "result" => "discarded"
-        );
+        ).increment(1);
         return Ok(Json(json!({"ok": true, "discarded": "private"})));
     }
     match payload.sender_kind() {
@@ -192,11 +192,11 @@ async fn process_agent_bot_payload(
         SenderKind::AgentBot | SenderKind::User | SenderKind::System => {
             // AgentBot/User/System chegam no webhook do bot; só Contact
             // alimenta o buffer. Outros são descartados silenciosamente.
-            metrics::increment_counter!(
+            metrics::counter!(
                 "bridge_webhook_received_total",
                 "event" => event.to_string(),
                 "result" => "skipped"
-            );
+            ).increment(1);
             return Ok(Json(json!({"ok": true, "skipped": true})));
         }
     }
@@ -220,11 +220,11 @@ async fn process_agent_bot_payload(
         .map_err(redis_err)?;
     if was_set.is_none() {
         tracing::info!(account_id, msg_id, "webhook duplicado ignorado");
-        metrics::increment_counter!(
+        metrics::counter!(
             "bridge_webhook_received_total",
             "event" => event.to_string(),
             "result" => "duplicate"
-        );
+        ).increment(1);
         return Ok(Json(json!({"ok": true, "duplicate": true})));
     }
 
@@ -326,7 +326,7 @@ async fn process_agent_bot_payload(
     };
 
     if let Some(reason) = trigger {
-        metrics::histogram!("bridge_buffer_messages_per_turn", n as f64);
+        metrics::histogram!("bridge_buffer_messages_per_turn").record(n as f64);
         enqueue_agent_run(&mut conn, conv_id, account_id, reason).await?;
     } else {
         // Janela deslizante: cada nova mensagem REAGENDA o debounce.
@@ -343,11 +343,11 @@ async fn process_agent_bot_payload(
             .map_err(redis_err)?;
     }
 
-    metrics::increment_counter!(
+    metrics::counter!(
         "bridge_webhook_received_total",
         "event" => event.to_string(),
         "result" => "processed"
-    );
+    ).increment(1);
     // (i) Sempre 200 — Chatwoot não deve esperar.
     Ok(Json(json!({"ok": true})))
 }
@@ -365,7 +365,7 @@ async fn webhook_account(
     let ts = header_str(&headers, "x-chatwoot-timestamp");
 
     verify_request(&state.config.chatwoot.webhook_secrets, sig, ts, &body).map_err(|e| {
-        metrics::increment_counter!("bridge_webhook_signature_failures_total");
+        metrics::counter!("bridge_webhook_signature_failures_total").increment(1);
         (StatusCode::UNAUTHORIZED, e)
     })?;
 
@@ -385,11 +385,11 @@ async fn process_account_payload(
     payload: &AgentBotWebhookPayload,
 ) -> Result<Json<Value>, (StatusCode, String)> {
     let event = payload.event.as_str();
-    metrics::increment_counter!(
+    metrics::counter!(
         "bridge_webhook_received_total",
         "event" => event.to_string(),
         "result" => "received"
-    );
+    ).increment(1);
 
     let conv = match payload.conversation.as_ref() {
         Some(c) => c,
@@ -442,11 +442,11 @@ async fn process_account_payload(
         }
     }
 
-    metrics::increment_counter!(
+    metrics::counter!(
         "bridge_webhook_received_total",
         "event" => event.to_string(),
         "result" => "processed"
-    );
+    ).increment(1);
     Ok(Json(json!({"ok": true})))
 }
 
@@ -686,7 +686,7 @@ async fn enqueue_agent_run(
         .await
         .map_err(redis_err)?;
 
-    metrics::increment_counter!("bridge_buffer_flush_total", "reason" => reason.to_string());
+    metrics::counter!("bridge_buffer_flush_total", "reason" => reason.to_string()).increment(1);
     tracing::info!(conv_id, account_id, reason, "agent run enqueued");
     Ok(())
 }
@@ -713,7 +713,7 @@ struct BufferedMessage {
 // ====================================================================
 
 /// Retorna o valor de um header como `&str`, ou string vazia se ausente.
-fn header_str(headers: &HeaderMap, name: &str) -> &str {
+fn header_str<'a>(headers: &'a HeaderMap, name: &'a str) -> &'a str {
     headers
         .get(name)
         .and_then(|v| v.to_str().ok())
@@ -779,8 +779,8 @@ fn status_to_ai_state(status: &str) -> AiState {
     }
 }
 
-/// Converte `redis::RedisError` em 500.
-fn redis_err(e: redis::RedisError) -> (StatusCode, String) {
+/// Converte `RedisError` em 500.
+fn redis_err(e: deadpool_redis::redis::RedisError) -> (StatusCode, String) {
     (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
 }
 

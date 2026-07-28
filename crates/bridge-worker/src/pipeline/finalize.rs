@@ -4,7 +4,7 @@
 //! run passou de 60s, estenderíamos o TTL — mas como o run já terminou,
 //! só liberamos. O watchdog vira relevante em `run` longos (ainda não na v1).
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use bridge_core::{AiState, RunId, StateEvent};
 

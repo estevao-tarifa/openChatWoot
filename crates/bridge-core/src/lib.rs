@@ -60,7 +60,7 @@ pub const QUEUE_AGENT_RUNS: &str = "queue:agent_runs";
 
 // ---- Métricas (Seção 15.1) ----
 pub mod metrics {
-    #[cfg_attr(feature = "no-auto-describe", allow(dead_code))]
+    #[allow(dead_code)]
     pub const WEBHOOK_RECEIVED: &str = "bridge_webhook_received_total";
     pub const WEBHOOK_SIGNATURE_FAILURES: &str = "bridge_webhook_signature_failures_total";
     pub const BUFFER_FLUSH: &str = "bridge_buffer_flush_total";

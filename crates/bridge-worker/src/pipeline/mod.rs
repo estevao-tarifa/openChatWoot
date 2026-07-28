@@ -36,7 +36,7 @@ use crate::consumer::AgentRunJob;
 use crate::state::{
     finish_agent_run, insert_agent_run, record_gate_decision, AppState, WorkerError,
 };
-use crate::pipeline::acquire_lock::{acquire_lock, release_lock, LockGuard};
+use crate::pipeline::acquire_lock::{acquire_lock, release_lock};
 
 /// Executa o pipeline completo para um job.
 pub async fn run(state: &AppState, job: AgentRunJob) -> Result<(), WorkerError> {
@@ -182,5 +182,3 @@ fn agent_err_kind(e: &bridge_core::AgentError) -> &'static str {
     }
 }
 
-// re-export p/ submódulos
-pub use inbound_gate::GateDecision;

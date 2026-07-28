@@ -3,10 +3,11 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
     /// Estados internos da conversa (coluna `conversation_state.ai_state`).
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
     #[serde(rename_all = "snake_case")]
     pub enum AiState {
         /// IA no comando.
+        #[default]
         AiActive,
         /// Run em andamento (buffer acumula).
         AiThinking,

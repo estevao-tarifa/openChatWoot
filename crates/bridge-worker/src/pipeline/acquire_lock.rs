@@ -6,7 +6,7 @@
 
 use std::time::Duration;
 
-use bridge_core::{lock_key, QUEUE_AGENT_RUNS};
+use bridge_core::lock_key;
 use deadpool_redis::Pool;
 use redis::AsyncCommands;
 use tracing::{debug, warn};
@@ -43,7 +43,7 @@ pub async fn acquire_lock(
     conv_id: i64,
 ) -> Result<Option<LockGuard>, WorkerError> {
     let mut conn = redis_pool.get().await?;
-    let token = uuid::Uuid::new_v4().to_string();
+    let token = uuid::Uuid::now_v7().to_string();
     let key = lock_key(conv_id);
 
     // SET NX PX 90000 — atomicamente.
@@ -68,7 +68,7 @@ pub async fn acquire_lock(
         let mut conn2 = redis_pool.get().await?;
         let now = chrono::Utc::now().timestamp_millis();
         let _: () = conn2
-            .z_add(
+            .zadd(
                 "debounce:zset",
                 conv_id.to_string(),
                 now + 2_000,

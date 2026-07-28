@@ -12,6 +12,8 @@ use deadpool_redis::Pool;
 use redis::AsyncCommands;
 use tracing::{debug, warn};
 
+use crate::state::WorkerError;
+
 /// Tick de 250 ms sobre o ZSET. Convs vencidas → LPUSH em `queue:agent_runs`.
 // ponytail: loop simples com `tokio::time::sleep`. Sem cron, sem scheduler —
 // a janela de debounce (6s) torna 250ms de latência aceitável. Trocar por um
@@ -28,7 +30,7 @@ pub async fn run(redis_pool: Pool) {
 
 /// Uma passagem do sweeper. Pega até 100 convs vencidas, remove do ZSET e
 /// enfileira. Cada uma vira um job `{"conversation_id": <id>}` na fila.
-async fn sweep_once(redis_pool: &Pool) -> Result<(), redis::RedisError> {
+async fn sweep_once(redis_pool: &Pool) -> Result<(), WorkerError> {
     let mut conn = redis_pool.get().await?;
     let now = Utc::now().timestamp_millis();
 

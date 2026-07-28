@@ -1008,7 +1008,7 @@ async fn reconcile_stale_thinking(
     // ponytail: conversas travadas em ai_thinking > 5 min indicam worker
     // morto no meio de um run. Forçamos unlock (DEL lock:conv) e marcamos o
     // run como stale para a máquina de estados voltar a responder.
-    let stuck: Vec<i64> = sqlx::query_as(
+    let stuck: Vec<i64> = sqlx::query_scalar(
         "SELECT conversation_id FROM conversation_state \
          WHERE ai_state = 'ai_thinking' AND updated_at < now() - interval '5 minutes'",
     )

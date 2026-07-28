@@ -9,7 +9,7 @@
 //! não-incoming na ingestão), G1–G3 raramente disparam aqui — mas ficam
 //! como defesa em profundidade (never trust the buffer).
 
-use bridge_core::{is_block_label, ActionKind, AiState, Config, InboundMessage};
+use bridge_core::{is_block_label, ActionKind, Config, InboundMessage};
 use chrono::Utc;
 
 use crate::state::ConversationState;

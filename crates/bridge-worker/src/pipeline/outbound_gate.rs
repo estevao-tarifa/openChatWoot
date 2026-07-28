@@ -160,8 +160,8 @@ pub fn evaluate(
         // S6 — similaridade > 0.95 com a última mensagem enviada (loop).
         if let Some(last) = last_reply {
             let sim = jaro_winkler(
-                normalize_for_cmp(&reply.text),
-                normalize_for_cmp(last),
+                &normalize_for_cmp(&reply.text),
+                &normalize_for_cmp(last),
             );
             if sim > 0.95 {
                 reviewed.blocked = true;

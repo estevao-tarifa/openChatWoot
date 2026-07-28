@@ -9,7 +9,6 @@
 use std::time::Duration;
 
 use bridge_core::QUEUE_AGENT_RUNS;
-use deadpool_redis::Pool;
 use serde::Deserialize;
 use tokio::signal;
 use tracing::{error, info, warn};

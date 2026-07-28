@@ -9,7 +9,7 @@
 
 use bridge_core::{
     AgentRequest, BusinessHoursState, Config, ContactSummary, ConversationContext,
-    ConversationId, InboundMessage, RunId,
+    ConversationId, RunId,
 };
 
 use crate::state::ConversationState;
@@ -25,7 +25,7 @@ pub fn build_agent_request(
     conv_id: ConversationId,
     state: &ConversationState,
     turn: &CollectedTurn,
-    trigger_reason: Option<&str>,
+    _trigger_reason: Option<&str>,
 ) -> AgentRequest {
     let context = build_context(config, conv_id, state, turn);
 
