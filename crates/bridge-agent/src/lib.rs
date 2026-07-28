@@ -201,6 +201,7 @@ fn parse_envelope(text: &str, run_id: RunId) -> AgentResponse {
             provider_session_id: env.provider_session_id,
             result: None,
             summary_for_supervisor: None,
+        },
         Err(e) => {
             // ponytail: modelo não devolveu JSON válido. Embrulha como reply
             // e confiança 0.0 — o Gate de Saída (S1) faz retry com instrução
@@ -551,7 +552,7 @@ impl AgentProvider for AnthropicProvider {
                     input_tokens: u.get("input_tokens").and_then(|n| n.as_u64()).unwrap_or(0) as u32,
                     output_tokens: u.get("output_tokens").and_then(|n| n.as_u64()).unwrap_or(0) as u32,
                     cost_usd: 0.0, // ponytail: cálculo de custo no orçamento diário (L6)
-                };
+                });
             }
         }
         Ok(agent_resp)
