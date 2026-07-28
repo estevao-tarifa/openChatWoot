@@ -354,7 +354,7 @@ impl AgentProvider for OpenResponsesProvider {
             request = request.header(self.agent_header.as_str(), aid);
         }
 
-        debug!(provider = self.id, run_id = %req.run_id: Some(run_id.to_string()), "openresponses run");
+        debug!(provider = self.id, run_id = %req.run_id, "openresponses run");
         let resp = request.send().await.map_err(|e| {
             if e.is_timeout() {
                 AgentError::Timeout
