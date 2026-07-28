@@ -76,7 +76,8 @@ pub fn build_system_prompt(context: &ConversationContext) -> String {
     s.push_str("== CONTEXTO DA CONVERSA ==\n");
     s.push_str(&format!("- canal: {}\n", context.inbox_channel));
     s.push_str(&format!("- contato: {} ({})\n",
-        context.contact.name, context.contact.phone_masked));
+        context.contact.as_ref().map(|c| c.name.as_str()).unwrap_or("(desconhecido)"),
+        context.contact.as_ref().map(|c| c.phone_masked.as_str()).unwrap_or("")));
     if let Some(client) = context.client.as_ref() {
         s.push_str(&format!("- cliente ERP: {} — CNPJ {} — regime {}\n",
             client.razao_social, client.cnpj, client.regime));
@@ -191,31 +192,33 @@ fn parse_envelope(text: &str, run_id: RunId) -> AgentResponse {
     let trimmed = text.trim();
     match serde_json::from_str::<ModelEnvelope>(trimmed) {
         Ok(env) => AgentResponse {
-            run_id,
+            run_id: Some(run_id.to_string()),
             reply: env.reply,
             actions: env.actions,
             handoff: env.handoff,
             confidence: env.confidence,
-            usage: env.usage.unwrap_or_default(),
+            usage: env.usage,
             provider_session_id: env.provider_session_id,
-        },
+            result: None,
+            summary_for_supervisor: None,
         Err(e) => {
             // ponytail: modelo não devolveu JSON válido. Embrulha como reply
             // e confiança 0.0 — o Gate de Saída (S1) faz retry com instrução
             // de correção ou descarta + handoff.
             warn!(run_id = %run_id, err = %e, "model did not return JSON envelope; wrapping as raw reply");
             AgentResponse {
-                run_id,
+                run_id: Some(run_id.to_string()),
                 reply: Some(Reply {
                     text: trimmed.to_string(),
-                    content_type: "text".to_string(),
+                    content_type: Some("text".to_string()),
                 }),
                 actions: Vec::new(),
                 handoff: HandoffInfo::default(),
                 confidence: 0.0,
-                usage: Usage::default(),
+                usage: Some(Usage::default()),
                 provider_session_id: None,
-            }
+                result: None,
+                summary_for_supervisor: None,
         }
     }
 }
@@ -285,7 +288,7 @@ impl OpenResponsesProvider {
     }
 
     /// Resolve qual agent_id usar: o da requisição, ou o default do provider.
-    fn resolve_agent_id(&self, req: &AgentRequest) -> Option<&str> {
+    fn resolve_agent_id<'a>(&self, req: &'a AgentRequest) -> Option<&'a str> {
         req.agent_id
             .as_deref()
             .or(self.default_agent_id.as_deref())
@@ -349,7 +352,7 @@ impl AgentProvider for OpenResponsesProvider {
             request = request.header(self.agent_header.as_str(), aid);
         }
 
-        debug!(provider = self.id, run_id = %req.run_id, "openresponses run");
+        debug!(provider = self.id, run_id = %req.run_id: Some(run_id.to_string()), "openresponses run");
         let resp = request.send().await.map_err(|e| {
             if e.is_timeout() {
                 AgentError::Timeout
@@ -540,9 +543,11 @@ impl AgentProvider for AnthropicProvider {
 
         // Uso: Anthropic devolve usage.input_tokens/output_tokens.
         let mut agent_resp = parse_envelope(&text, req.run_id);
-        if agent_resp.usage.input_tokens == 0 && agent_resp.usage.output_tokens == 0 {
+        if agent_resp.usage.as_ref().map(|u| u.input_tokens).unwrap_or(0) == 0
+            && agent_resp.usage.as_ref().map(|u| u.output_tokens).unwrap_or(0) == 0
+        {
             if let Some(u) = v.get("usage") {
-                agent_resp.usage = Usage {
+                agent_resp.usage = Some(Usage {
                     input_tokens: u.get("input_tokens").and_then(|n| n.as_u64()).unwrap_or(0) as u32,
                     output_tokens: u.get("output_tokens").and_then(|n| n.as_u64()).unwrap_or(0) as u32,
                     cost_usd: 0.0, // ponytail: cálculo de custo no orçamento diário (L6)
@@ -724,7 +729,7 @@ mod tests {
         impl AgentProvider for OkProv {
             fn id(&self) -> &'static str { "ok" }
             async fn run(&self, _: AgentRequest) -> Result<AgentResponse, AgentError> {
-                Ok(AgentResponse { run_id: RunId::default(), reply: None, actions: vec![], handoff: HandoffInfo::default(), confidence: 1.0, usage: Usage::default(), provider_session_id: None })
+                Ok(AgentResponse { run_id: None, reply: None, actions: vec![], handoff: HandoffInfo::default(), confidence: 1.0, usage: Some(Usage::default()), provider_session_id: None, result: None, summary_for_supervisor: None })
             }
             async fn health(&self) -> Result<(), AgentError> { Ok(()) }
         }

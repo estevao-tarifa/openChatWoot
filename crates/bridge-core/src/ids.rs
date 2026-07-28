@@ -19,7 +19,7 @@ pub struct RunId(pub Uuid);
 impl RunId {
     pub fn new() -> Self {
         // ponytail: v4 por padrão; trocar por Uuid::now_v7() quando estável
-        Self(Uuid::new_v4())
+        Self(Uuid::now_v7())
     }
     pub fn as_uuid(&self) -> Uuid { self.0 }
 }

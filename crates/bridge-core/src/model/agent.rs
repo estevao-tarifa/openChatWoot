@@ -217,3 +217,19 @@ impl Default for Usage {
 impl Default for Attachment {
     fn default() -> Self { Self { url: String::new(), mime: String::new(), name: String::new() } }
 }
+
+impl Default for AgentRequest {
+    fn default() -> Self {
+        Self {
+            run_id: RunId::default(),
+            session_key: String::new(),
+            agent_id: None,
+            turn: vec![],
+            context: ConversationContext::default(),
+            allowed_actions: vec![],
+            deadline_ms: 30_000,
+            max_output_chars: 1200,
+            locale: "pt-BR".to_string(),
+        }
+    }
+}
