@@ -1,0 +1,28 @@
+[package]
+name = "bridge-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bridge-core = { workspace = true }
+bridge-chatwoot = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+redis = { workspace = true }
+deadpool-redis = { workspace = true }
+sqlx = { workspace = true }
+uuid = { workspace = true }
+hex = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }
+subtle = { workspace = true }
+time = { workspace = true }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }

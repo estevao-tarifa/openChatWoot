@@ -1,0 +1,45 @@
+# Registry de agentes (Seção 5.9)
+# Recarregado a quente — sem deploy necessário
+
+[[agent]]
+id = "iris-triagem"
+role = "supervisor"
+provider = "openclaw"
+prompt_file = "prompts/triagem.md"
+allowed_actions = ["send_message", "add_labels", "assign_team", "set_priority",
+                   "request_handoff", "call_agent", "call_tool"]
+can_delegate_to = ["iris-fiscal", "iris-dp", "iris-financeiro"]
+speaks_to_customer = true
+
+[[agent]]
+id = "iris-fiscal"
+role = "specialist"
+provider = "hermes"
+prompt_file = "prompts/fiscal.md"
+allowed_actions = ["add_labels", "set_custom_attributes", "call_tool"]
+tools = ["erp.list_pending_taxes", "erp.get_invoice_pdf", "kb.search"]
+can_delegate_to = []
+speaks_to_customer = false
+timeout_ms = 30000
+
+[[agent]]
+id = "iris-dp"
+role = "specialist"
+provider = "openclaw"
+prompt_file = "prompts/dp.md"
+allowed_actions = ["add_labels", "set_custom_attributes", "call_tool"]
+tools = ["kb.search", "docs.find_client_document"]
+can_delegate_to = []
+speaks_to_customer = false
+timeout_ms = 30000
+
+[[agent]]
+id = "iris-financeiro"
+role = "specialist"
+provider = "anthropic"
+prompt_file = "prompts/financeiro.md"
+allowed_actions = ["add_labels", "set_custom_attributes", "call_tool"]
+tools = ["erp.get_client_by_cnpj", "tasks.create_internal_task"]
+can_delegate_to = []
+speaks_to_customer = false
+timeout_ms = 30000

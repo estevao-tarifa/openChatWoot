@@ -1,0 +1,48 @@
+# Configuração padrão — sobrescrita por variáveis de ambiente (Seção 14)
+
+[chatwoot]
+base_url = "https://chat.seudominio.com.br"
+account_id = 1
+bot_token = ""
+ai_enabled_inboxes = [3, 4]
+fallback_team_id = 2
+
+[agent]
+display_name = "Íris"
+provider = "openclaw"
+provider_fallback = "anthropic"
+timeout_ms = 45000
+max_output_chars = 1200
+
+[buffer]
+debounce_ms = 6000
+max_wait_ms = 25000
+max_messages = 12
+max_chars = 6000
+media_debounce_ms = 10000
+
+[rate_limits]
+conv_runs_per_min = 6
+contact_runs_per_hour = 30
+out_msgs_per_conv_per_hour = 15
+account_runs_per_min = 300
+max_concurrent_runs = 20
+max_consecutive_ai_turns = 4
+daily_budget_usd = 25.0
+
+[notification]
+channels = ["telegram", "whatsapp"]
+quiet_hours_start = "22:00"
+quiet_hours_end = "07:00"
+max_per_agent_per_hour = 10
+ack_threshold_ms = 3000
+ack_cooldown_ms = 600000
+
+[infra]
+host = "0.0.0.0"
+port = 8080
+log_level = "info"
+log_redact_pii = true
+data_retention_days = 180
+ai_enabled = true
+after_hours_mode = "ai"

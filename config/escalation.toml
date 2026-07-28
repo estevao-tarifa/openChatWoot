@@ -1,0 +1,28 @@
+# Escada de escalonamento SLA (Seção 11.2)
+# -- ponytail: feriados hardcoded em config/business_hours.toml, trocar anualmente
+
+[[level]]
+delay_min = 3
+recipient = "assignee"
+channels = ["whatsapp"]
+
+[[level]]
+delay_min = 10
+recipient = "assignee"
+channels = ["whatsapp", "telegram"]
+
+[[level]]
+delay_min = 20
+recipient = "team_member"
+channels = ["whatsapp"]
+
+[[level]]
+delay_min = 40
+recipient = "supervisor"
+channels = ["whatsapp", "email"]
+
+[[level]]
+delay_min = 60
+recipient = "partner"
+channels = ["whatsapp", "email"]
+label = "sla:violado"

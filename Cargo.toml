@@ -1,0 +1,96 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bridge-core",
+    "crates/bridge-store",
+    "crates/bridge-chatwoot",
+    "crates/bridge-agent",
+    "crates/bridge-notify",
+    "crates/bridge-api",
+    "crates/bridge-worker",
+    "crates/bridge-scheduler",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.83"
+license = "proprietary"
+
+[workspace.dependencies]
+tokio = { version = "1.43", features = ["full"] }
+axum = { version = "0.8", features = ["macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "timeout", "limit"] }
+http = "1"
+hyper = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "multipart"] }
+
+# serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# DB
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json", "macros", "migrate",
+] }
+
+# Cache / queue
+redis = { version = "0.27", features = ["tokio-comp", "script"] }
+deadpool-redis = "0.18"
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+opentelemetry = "0.27"
+opentelemetry-otlp = "0.27"
+opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }
+
+# Metrics
+metrics = "0.24"
+metrics-exporter-prometheus = "0.16"
+
+# Config
+figment = { version = "0.10", features = ["toml", "env"] }
+
+# Crypto
+hmac = "0.12"
+sha2 = "0.10"
+subtle = "2"
+hex = "0.4"
+
+# Time
+time = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.10"
+
+# Utils
+uuid = { version = "1", features = ["v7", "serde"] }
+url = "2"
+thiserror = "2"
+anyhow = "1"
+secrecy = "0.10"
+regex = "1"
+strsim = "0.11"
+
+# Async traits
+async-trait = "0.1"
+
+# Scheduler
+tokio-cron-scheduler = "0.13"
+
+# Rate limiting
+governor = "0.7"
+
+# Internal workspace deps
+bridge-core = { path = "crates/bridge-core" }
+bridge-store = { path = "crates/bridge-store" }
+bridge-chatwoot = { path = "crates/bridge-chatwoot" }
+bridge-agent = { path = "crates/bridge-agent" }
+bridge-notify = { path = "crates/bridge-notify" }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"

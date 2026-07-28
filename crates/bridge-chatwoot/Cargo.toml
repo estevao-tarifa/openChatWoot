@@ -1,0 +1,21 @@
+[package]
+name = "bridge-chatwoot"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bridge-core = { workspace = true }
+reqwest = { workspace = true, features = ["json", "rustls-tls", "multipart"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }
+subtle = { workspace = true }
+hex = { workspace = true }
+time = { workspace = true }
+tokio = { workspace = true }
+url = { workspace = true }

@@ -1,0 +1,121 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bridge
+      POSTGRES_USER: bridge
+      POSTGRES_PASSWORD: bridge
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "bridge"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      target: builder
+    command: ["sqlx", "migrate", "run", "--source", "/app/migrations"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://bridge:bridge@postgres:5432/bridge
+    volumes:
+      - ./migrations:/app/migrations:ro
+
+  bridge-api:
+    build:
+      context: .
+      target: runtime
+    command: ["/app/bridge-api"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://bridge:bridge@postgres:5432/bridge
+      REDIS_URL: redis://redis:6379/0
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  bridge-worker:
+    build:
+      context: .
+      target: runtime
+    command: ["/app/bridge-worker"]
+    restart: unless-stopped
+    deploy:
+      replicas: 2                  # ponytail: mínimo 2 para lock por conversa; escalar se necessário
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://bridge:bridge@postgres:5432/bridge
+      REDIS_URL: redis://redis:6379/0
+
+  bridge-scheduler:
+    build:
+      context: .
+      target: runtime
+    command: ["/app/bridge-scheduler"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://bridge:bridge@postgres:5432/bridge
+      REDIS_URL: redis://redis:6379/0
+
+  # Gateway de IA — só pode ser acessado do container bridge-worker, NUNCA exposto
+  # Documentação: seção 10.2 da especificação — esse endpoint concede acesso de operador completo
+  # ponytail: gateway NÃO tem ports: exposto — acesso apenas via network interna do Docker
+  #
+  # openclaw-gateway:
+  #   image: openclaw/latest  # substituir pela imagem real
+  #   restart: unless-stopped
+  #   networks:
+  #     - bridge-internal
+  #   # SEM ports — acessível apenas pela rede interna
+
+volumes:
+  postgres_data:
+  redis_data:

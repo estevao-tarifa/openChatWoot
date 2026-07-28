@@ -1,0 +1,47 @@
+# Horário comercial (Seção 11.2)
+# -- ponytail: feriados hardcoded, trocar anualmente
+# Feriados nacionais + municipais (exemplo São Paulo)
+
+timezone = "America/Sao_Paulo"
+weekday_start = "08:00"
+weekday_end = "18:00"
+
+[[holidays]]
+date = "2026-01-01"
+name = "Confraternização Universal"
+
+[[holidays]]
+date = "2026-04-21"
+name = "Tiradentes"
+
+[[holidays]]
+date = "2026-05-01"
+name = "Dia do Trabalho"
+
+[[holidays]]
+date = "2026-09-07"
+name = "Independência"
+
+[[holidays]]
+date = "2026-10-12"
+name = "Nossa Senhora Aparecida"
+
+[[holidays]]
+date = "2026-11-02"
+name = "Finados"
+
+[[holidays]]
+date = "2026-11-15"
+name = "Proclamação da República"
+
+[[holidays]]
+date = "2026-11-20"
+name = "Dia da Consciência Negra"
+
+[[holidays]]
+date = "2026-12-25"
+name = "Natal"
+
+[recess]
+start = "2026-12-23"
+end = "2027-01-03"
