@@ -290,7 +290,7 @@ impl OpenResponsesProvider {
     }
 
     /// Resolve qual agent_id usar: o da requisição, ou o default do provider.
-    fn resolve_agent_id<'a>(&self, req: &'a AgentRequest) -> Option<&'a str> {
+    fn resolve_agent_id<'a>(&'a self, req: &'a AgentRequest) -> Option<&'a str> {
         req.agent_id
             .as_deref()
             .or(self.default_agent_id.as_deref())
