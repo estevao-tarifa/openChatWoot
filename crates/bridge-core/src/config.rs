@@ -21,15 +21,21 @@ use figment::{providers::Env, Figment};
             impl<'de> serde::de::Visitor<'de> for V {
                 type Value = AnyString;
                 fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                    f.write_str("a string or number")
+                    f.write_str("a string, number, or boolean")
                 }
                 fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<AnyString, E> {
                     Ok(AnyString(Some(v.to_string())))
+                }
+                fn visit_string<E: serde::de::Error>(self, v: String) -> Result<AnyString, E> {
+                    Ok(AnyString(Some(v)))
                 }
                 fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<AnyString, E> {
                     Ok(AnyString(Some(v.to_string())))
                 }
                 fn visit_f64<E: serde::de::Error>(self, v: f64) -> Result<AnyString, E> {
+                    Ok(AnyString(Some(v.to_string())))
+                }
+                fn visit_bool<E: serde::de::Error>(self, v: bool) -> Result<AnyString, E> {
                     Ok(AnyString(Some(v.to_string())))
                 }
             }
@@ -46,7 +52,7 @@ use figment::{providers::Env, Figment};
         chatwoot_bot_token: Option<String>,
         chatwoot_platform_token: Option<String>,
         webhook_secrets: Option<String>,
-        ai_enabled_inboxes: Option<String>,
+        ai_enabled_inboxes: AnyString,
         fallback_team_id: AnyString,
 
         // Identidade / provider
@@ -322,7 +328,7 @@ use figment::{providers::Env, Figment};
                     .map(SecretString::from)
                     .collect();
             }
-            if let Some(v) = r.ai_enabled_inboxes {
+            if let Some(v) = r.ai_enabled_inboxes.0 {
                 cfg.chatwoot.ai_enabled_inboxes = split_csv(&v)
                     .into_iter()
                     .filter_map(|s| s.trim().parse().ok())
