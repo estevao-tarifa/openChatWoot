@@ -220,6 +220,7 @@ fn parse_envelope(text: &str, run_id: RunId) -> AgentResponse {
                 provider_session_id: None,
                 result: None,
                 summary_for_supervisor: None,
+            }
         }
     }
 }
