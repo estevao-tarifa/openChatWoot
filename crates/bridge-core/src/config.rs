@@ -79,7 +79,7 @@ use figment::{providers::Env, Figment};
         daily_budget_usd: AnyString,
 
         // Controle
-        ai_enabled: Option<String>,
+        ai_enabled: AnyString,
         ai_block_labels: Option<String>,
         ai_silent_label: Option<String>,
         after_hours_mode: Option<String>,
@@ -102,7 +102,7 @@ use figment::{providers::Env, Figment};
         tools_service_token: Option<String>,
         data_retention_days: AnyString,
         log_level: Option<String>,
-        log_redact_pii: Option<String>,
+        log_redact_pii: AnyString,
         otel_exporter_otlp_endpoint: Option<String>,
     }
 
@@ -372,7 +372,7 @@ use figment::{providers::Env, Figment};
                     cfg.agent.max_output_chars = n;
                 }
             }
-            if let Some(v) = r.ai_enabled {
+            if let Some(v) = r.ai_enabled.0 {
                 cfg.agent.ai_enabled = parse_bool(&v).unwrap_or(true);
             }
             if let Some(v) = r.ai_block_labels {
@@ -514,7 +514,7 @@ use figment::{providers::Env, Figment};
             if let Some(v) = r.log_level {
                 cfg.infra.log_level = v;
             }
-            if let Some(v) = r.log_redact_pii {
+            if let Some(v) = r.log_redact_pii.0 {
                 cfg.infra.log_redact_pii = parse_bool(&v).unwrap_or(true);
             }
             if let Some(v) = r.otel_exporter_otlp_endpoint {
