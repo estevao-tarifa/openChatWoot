@@ -3,22 +3,51 @@ use figment::{providers::Env, Figment};
     use serde::Deserialize;
 
     // ponytail: carregamos UMA Fatia plana `RawConfig` lendo TODAS as env vars
-    // via `Env::raw()` (figment lowercases as chaves e ignora as não listadas),
-    // e depois montamos o `Config` tipado aninhado. Evita o malabarismo de
-    // prefixos/nesting do figment para um schema com 6 grupos e ~40 vars.
-    // Trocar por `Toml::file` aninhado quando houver config/bridge.toml real.
+    // via `Env::raw()` — figment lowerecase as chaves. O wrapper `AnyString`
+    // aceita tanto números como strings do ambiente, já que `Env::raw()` pode
+    // interpretar valores puramente numéricos como inteiros.
+
+    /// Tipo que aceita string **ou** número na deserialização (figment quirk).
+    #[derive(Debug, Default)]
+    struct AnyString(Option<String>);
+
+    impl From<AnyString> for Option<String> {
+        fn from(v: AnyString) -> Self { v.0 }
+    }
+
+    impl<'de> serde::Deserialize<'de> for AnyString {
+        fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+            struct V;
+            impl<'de> serde::de::Visitor<'de> for V {
+                type Value = AnyString;
+                fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    f.write_str("a string or number")
+                }
+                fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<AnyString, E> {
+                    Ok(AnyString(Some(v.to_string())))
+                }
+                fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<AnyString, E> {
+                    Ok(AnyString(Some(v.to_string())))
+                }
+                fn visit_f64<E: serde::de::Error>(self, v: f64) -> Result<AnyString, E> {
+                    Ok(AnyString(Some(v.to_string())))
+                }
+            }
+            d.deserialize_any(V)
+        }
+    }
 
     #[derive(Debug, Default, Deserialize)]
     #[serde(default)]
     struct RawConfig {
         // Chatwoot
         chatwoot_base_url: Option<String>,
-        chatwoot_account_id: Option<String>,
+        chatwoot_account_id: AnyString,
         chatwoot_bot_token: Option<String>,
         chatwoot_platform_token: Option<String>,
         webhook_secrets: Option<String>,
         ai_enabled_inboxes: Option<String>,
-        fallback_team_id: Option<String>,
+        fallback_team_id: AnyString,
 
         // Identidade / provider
         agent_display_name: Option<String>,
@@ -30,32 +59,32 @@ use figment::{providers::Env, Figment};
         openclaw_agent_id: Option<String>,
         hermes_shim_url: Option<String>,
         anthropic_api_key: Option<String>,
-        agent_timeout_ms: Option<String>,
-        agent_max_output_chars: Option<String>,
+        agent_timeout_ms: AnyString,
+        agent_max_output_chars: AnyString,
 
         // Buffer
-        buffer_debounce_ms: Option<String>,
-        buffer_max_wait_ms: Option<String>,
-        buffer_max_messages: Option<String>,
-        buffer_max_chars: Option<String>,
-        buffer_media_debounce_ms: Option<String>,
+        buffer_debounce_ms: AnyString,
+        buffer_max_wait_ms: AnyString,
+        buffer_max_messages: AnyString,
+        buffer_max_chars: AnyString,
+        buffer_media_debounce_ms: AnyString,
 
         // Limitadores
-        rl_conv_runs_per_min: Option<String>,
-        rl_contact_runs_per_hour: Option<String>,
-        rl_out_msgs_per_conv_per_hour: Option<String>,
-        rl_account_runs_per_min: Option<String>,
-        max_concurrent_agent_runs: Option<String>,
-        max_consecutive_ai_turns: Option<String>,
-        daily_budget_usd: Option<String>,
+        rl_conv_runs_per_min: AnyString,
+        rl_contact_runs_per_hour: AnyString,
+        rl_out_msgs_per_conv_per_hour: AnyString,
+        rl_account_runs_per_min: AnyString,
+        max_concurrent_agent_runs: AnyString,
+        max_consecutive_ai_turns: AnyString,
+        daily_budget_usd: AnyString,
 
         // Controle
         ai_enabled: Option<String>,
         ai_block_labels: Option<String>,
         ai_silent_label: Option<String>,
         after_hours_mode: Option<String>,
-        ack_threshold_ms: Option<String>,
-        ack_cooldown_ms: Option<String>,
+        ack_threshold_ms: AnyString,
+        ack_cooldown_ms: AnyString,
         allowed_link_domains: Option<String>,
 
         // Notificações
@@ -64,14 +93,14 @@ use figment::{providers::Env, Figment};
         whatsapp_cloud_token: Option<String>,
         whatsapp_template_name: Option<String>,
         notify_quiet_hours: Option<String>,
-        notify_max_per_agent_per_hour: Option<String>,
+        notify_max_per_agent_per_hour: AnyString,
 
         // Infra
         database_url: Option<String>,
         redis_url: Option<String>,
         tools_service_url: Option<String>,
         tools_service_token: Option<String>,
-        data_retention_days: Option<String>,
+        data_retention_days: AnyString,
         log_level: Option<String>,
         log_redact_pii: Option<String>,
         otel_exporter_otlp_endpoint: Option<String>,
@@ -274,7 +303,7 @@ use figment::{providers::Env, Figment};
             if let Some(v) = r.chatwoot_base_url {
                 cfg.chatwoot.base_url = v;
             }
-            if let Some(v) = r.chatwoot_account_id {
+            if let Some(v) = r.chatwoot_account_id.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.chatwoot.account_id = n;
                 }
@@ -299,7 +328,7 @@ use figment::{providers::Env, Figment};
                     .filter_map(|s| s.trim().parse().ok())
                     .collect();
             }
-            if let Some(v) = r.fallback_team_id {
+            if let Some(v) = r.fallback_team_id.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.chatwoot.fallback_team_id = n;
                 }
@@ -333,12 +362,12 @@ use figment::{providers::Env, Figment};
             if let Some(v) = r.anthropic_api_key {
                 cfg.agent.anthropic_api_key = SecretString::from(v);
             }
-            if let Some(v) = r.agent_timeout_ms {
+            if let Some(v) = r.agent_timeout_ms.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.agent.timeout_ms = n;
                 }
             }
-            if let Some(v) = r.agent_max_output_chars {
+            if let Some(v) = r.agent_max_output_chars.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.agent.max_output_chars = n;
                 }
@@ -358,12 +387,12 @@ use figment::{providers::Env, Figment};
             if let Some(v) = r.after_hours_mode {
                 cfg.agent.after_hours_mode = v;
             }
-            if let Some(v) = r.ack_threshold_ms {
+            if let Some(v) = r.ack_threshold_ms.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.agent.ack_threshold_ms = n;
                 }
             }
-            if let Some(v) = r.ack_cooldown_ms {
+            if let Some(v) = r.ack_cooldown_ms.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.agent.ack_cooldown_ms = n;
                 }
@@ -376,64 +405,64 @@ use figment::{providers::Env, Figment};
             }
 
             // Buffer
-            if let Some(v) = r.buffer_debounce_ms {
+            if let Some(v) = r.buffer_debounce_ms.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.buffer.debounce_ms = n;
                 }
             }
-            if let Some(v) = r.buffer_max_wait_ms {
+            if let Some(v) = r.buffer_max_wait_ms.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.buffer.max_wait_ms = n;
                 }
             }
-            if let Some(v) = r.buffer_max_messages {
+            if let Some(v) = r.buffer_max_messages.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.buffer.max_messages = n;
                 }
             }
-            if let Some(v) = r.buffer_max_chars {
+            if let Some(v) = r.buffer_max_chars.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.buffer.max_chars = n;
                 }
             }
-            if let Some(v) = r.buffer_media_debounce_ms {
+            if let Some(v) = r.buffer_media_debounce_ms.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.buffer.media_debounce_ms = n;
                 }
             }
 
             // Rate limits
-            if let Some(v) = r.rl_conv_runs_per_min {
+            if let Some(v) = r.rl_conv_runs_per_min.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.rate_limits.conv_runs_per_min = n;
                 }
             }
-            if let Some(v) = r.rl_contact_runs_per_hour {
+            if let Some(v) = r.rl_contact_runs_per_hour.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.rate_limits.contact_runs_per_hour = n;
                 }
             }
-            if let Some(v) = r.rl_out_msgs_per_conv_per_hour {
+            if let Some(v) = r.rl_out_msgs_per_conv_per_hour.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.rate_limits.out_msgs_per_conv_per_hour = n;
                 }
             }
-            if let Some(v) = r.rl_account_runs_per_min {
+            if let Some(v) = r.rl_account_runs_per_min.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.rate_limits.account_runs_per_min = n;
                 }
             }
-            if let Some(v) = r.max_concurrent_agent_runs {
+            if let Some(v) = r.max_concurrent_agent_runs.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.rate_limits.max_concurrent_runs = n;
                 }
             }
-            if let Some(v) = r.max_consecutive_ai_turns {
+            if let Some(v) = r.max_consecutive_ai_turns.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.rate_limits.max_consecutive_ai_turns = n;
                 }
             }
-            if let Some(v) = r.daily_budget_usd {
+            if let Some(v) = r.daily_budget_usd.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.rate_limits.daily_budget_usd = n;
                 }
@@ -458,7 +487,7 @@ use figment::{providers::Env, Figment};
             if let Some(v) = r.notify_quiet_hours {
                 cfg.notification.quiet_hours = v;
             }
-            if let Some(v) = r.notify_max_per_agent_per_hour {
+            if let Some(v) = r.notify_max_per_agent_per_hour.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.notification.max_per_agent_per_hour = n;
                 }
@@ -477,7 +506,7 @@ use figment::{providers::Env, Figment};
             if let Some(v) = r.tools_service_token {
                 cfg.infra.tools_service_token = SecretString::from(v);
             }
-            if let Some(v) = r.data_retention_days {
+            if let Some(v) = r.data_retention_days.0 {
                 if let Ok(n) = v.trim().parse() {
                     cfg.infra.data_retention_days = n;
                 }
