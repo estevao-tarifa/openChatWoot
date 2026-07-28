@@ -83,3 +83,4 @@ use thiserror::Error;
         RateLimited,
         #[error("timeout")]
         Timeout,
+}
